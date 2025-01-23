@@ -26,9 +26,9 @@ struct SearchAppView: View {
                        }
                    }
                }
-               Button("Export") {
-                   print("Button tapped!")
-               }.padding()
+               Button("Export to File") {
+                   viewModel.exportTextFile()
+             }.padding()
            }
            .searchable(text: $viewModel.searchText, prompt: "Search")
            .navigationTitle("Search App")

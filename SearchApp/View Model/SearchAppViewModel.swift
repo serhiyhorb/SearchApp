@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import CoreServices.SearchKit
+import AppKit
 
 class SearchAppViewModel: ObservableObject {
     @Published var filteredItems: [Item]
@@ -69,4 +70,26 @@ class SearchAppViewModel: ObservableObject {
             }
         }
     }
+    
+    func exportTextFile() {
+          let savePanel = NSSavePanel()
+          savePanel.title = "Save File"
+          savePanel.allowedFileTypes = ["txt"]
+          savePanel.canCreateDirectories = true
+          let data = filteredItems.map { $0.text }.joined(separator: "\n")
+          // Display the save panel
+          if let window = NSApplication.shared.windows.first {
+              savePanel.beginSheetModal(for: window) { response in
+                  if response == .OK, let url = savePanel.url {
+                      do {
+                          
+                          try data.write(to: url, atomically: true, encoding: .utf8)
+                          print("File saved successfully at \(url.path)")
+                      } catch {
+                          print("Failed to save file: \(error.localizedDescription)")
+                      }
+                  }
+              }
+          }
+      }
 }
