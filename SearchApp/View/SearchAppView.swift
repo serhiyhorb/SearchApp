@@ -14,22 +14,24 @@ struct SearchAppView: View {
         
     var body: some View {
            VStack {
-               Text("Search App")
-                   .font(.largeTitle)
-                   .padding()
-               SearchBar(searchText: $viewModel.searchText)
-                   .padding()
-               Table(viewModel.items) {
-                   TableColumn("Name", value: \.text)
-                   
+               List(viewModel.filteredItems, id: \.id) {
+                   Text($0.text)
+               }.overlay {
+                   if viewModel.isLoading {
+                       ProgressView("Searching \"\(viewModel.searchText)\"")
+                   } else {
+                       if viewModel.filteredItems.isEmpty {
+                           Text("Results not found for\n\"\(viewModel.searchText)\"")
+                               .multilineTextAlignment(.center)
+                       }
+                   }
                }
-               .frame(minWidth: 400, minHeight: 300)
-               .padding()
-               
                Button("Export") {
                    print("Button tapped!")
                }.padding()
            }
+           .searchable(text: $viewModel.searchText, prompt: "Search")
+           .navigationTitle("Search App")
        }
 }
 
