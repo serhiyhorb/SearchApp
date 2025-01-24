@@ -102,31 +102,44 @@ class SearchAppViewModel: ObservableObject {
     }
     
     func exportTextFile() {
-          let savePanel = NSSavePanel()
-          savePanel.title = "Save File"
-          savePanel.allowedFileTypes = ["txt"]
-          savePanel.canCreateDirectories = true
-          let data = filteredItems.map { $0.text }.joined(separator: "\n")
-          // Display the save panel
-          if let window = NSApplication.shared.windows.first {
-              savePanel.beginSheetModal(for: window) { response in
-                  if response == .OK, let url = savePanel.url {
-                      do {
-                          try data.write(to: url, atomically: true, encoding: .utf8)
-                          print("File saved successfully at \(url.path)")
-                      } catch {
-                          print("Failed to save file: \(error.localizedDescription)")
-                      }
+        let data = filteredItems.map { $0.text }.joined(separator: "\n")
+        if data.isEmpty {
+            // Show a warning alert
+            let alert = NSAlert()
+            alert.messageText = "No Data to Save"
+            alert.informativeText = "There is no data to save. Please perform a search first."
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+            return
+        }
+        let savePanel = NSSavePanel()
+        savePanel.title = "Save File"
+        savePanel.allowedFileTypes = ["txt"]
+        savePanel.canCreateDirectories = true
+       
+        // Display the save panel
+        if let window = NSApplication.shared.windows.first {
+          savePanel.beginSheetModal(for: window) { response in
+              if response == .OK, let url = savePanel.url {
+                  do {
+                      try data.write(to: url, atomically: true, encoding: .utf8)
+                      print("File saved successfully at \(url.path)")
+                  } catch {
+                      print("Failed to save file: \(error.localizedDescription)")
                   }
               }
           }
-      }
+        }
+    }
+    
     func reset() {
         searchText = ""
         lastSearchQueries.removeAll()
         isCaseSensitive = false
         UserDefaultsManager.shared.clearAll()
     }
+    
     private func addQueryToHistory(_ query: String) {
         guard !query.isEmpty else { return }
         // Check if the query already exists in the history
