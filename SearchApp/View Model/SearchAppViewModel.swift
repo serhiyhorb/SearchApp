@@ -11,7 +11,6 @@ import CoreServices.SearchKit
 import AppKit
 
 class SearchAppViewModel: ObservableObject {
-   
     @Published var searchText: String = ""
     @Published var isLoading: Bool = false
     @Published var isCaseSensitive: Bool  = UserDefaultsManager.shared.isCaseSensitive {
@@ -82,8 +81,19 @@ class SearchAppViewModel: ObservableObject {
                     return item.text.lowercased().contains(query.lowercased())
                 }
             }
+            // Sort the result so that items starting with the search query come first
+            let sortedResult = result.sorted { item1, item2 in
+                let item1StartsWithQuery = item1.text.lowercased().hasPrefix(query.lowercased())
+                let item2StartsWithQuery = item2.text.lowercased().hasPrefix(query.lowercased())
+                
+                if item1StartsWithQuery == item2StartsWithQuery {
+                    // If both start with the query or both don't, sort alphabetically
+                    return item1.text < item2.text
+                }
+                return item1StartsWithQuery // Prioritize items starting with the query
+            }
             DispatchQueue.main.async {
-                self.filteredItems = result
+                self.filteredItems = sortedResult
                 self.isLoading = false
                 self.addQueryToHistory(query)
                 
