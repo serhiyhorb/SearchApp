@@ -11,11 +11,23 @@ import CoreServices.SearchKit
 import AppKit
 
 class SearchAppViewModel: ObservableObject {
-    @Published var filteredItems: [Item]
-    private var items: [Item]
-    
+   
     @Published var searchText: String = ""
     @Published var isLoading: Bool = false
+    @Published var isCaseSensitive: Bool  = UserDefaultsManager.shared.isCaseSensitive {
+        didSet {
+            UserDefaultsManager.shared.isCaseSensitive = isCaseSensitive
+            performSearch(with: searchText)
+        }
+    }
+    @Published var lastSearchQueries: [String] = UserDefaultsManager.shared.lastSearchQueries {
+          didSet {
+              UserDefaultsManager.shared.lastSearchQueries = lastSearchQueries
+          }
+      }
+      
+    @Published var filteredItems: [Item]
+    private var items: [Item]
     
     private var cancellables = Set<AnyCancellable>() // To store Combine subscriptions
     
@@ -58,15 +70,23 @@ class SearchAppViewModel: ObservableObject {
             self.isLoading = false
             return
         }
-        
         self.isLoading = true
         self.filteredItems = []
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
-            let result = self.items.filter { $0.text.contains(query) }
+            // Perform case-sensitive or case-insensitive filtering
+            let result: [Item] = self.items.filter { item in
+                if self.isCaseSensitive {
+                    return item.text.contains(query)
+                } else {
+                    return item.text.lowercased().contains(query.lowercased())
+                }
+            }
             DispatchQueue.main.async {
                 self.filteredItems = result
                 self.isLoading = false
+                self.addQueryToHistory(query)
+                
             }
         }
     }
@@ -82,7 +102,6 @@ class SearchAppViewModel: ObservableObject {
               savePanel.beginSheetModal(for: window) { response in
                   if response == .OK, let url = savePanel.url {
                       do {
-                          
                           try data.write(to: url, atomically: true, encoding: .utf8)
                           print("File saved successfully at \(url.path)")
                       } catch {
@@ -92,4 +111,25 @@ class SearchAppViewModel: ObservableObject {
               }
           }
       }
+    func reset() {
+        searchText = ""
+        lastSearchQueries.removeAll()
+        isCaseSensitive = false
+        UserDefaultsManager.shared.clearAll()
+    }
+    private func addQueryToHistory(_ query: String) {
+        guard !query.isEmpty else { return }
+        // Check if the query already exists in the history
+        if let existingIndex = lastSearchQueries.firstIndex(of: query) {
+            // Move the existing query to the front
+            lastSearchQueries.remove(at: existingIndex)
+        }
+        // Insert the new query at the front
+        lastSearchQueries.insert(query, at: 0)
+        
+        // Ensure the history contains only the 5 most recent queries
+        if lastSearchQueries.count > 5 {
+            lastSearchQueries.removeLast()
+        }
+    }
 }
