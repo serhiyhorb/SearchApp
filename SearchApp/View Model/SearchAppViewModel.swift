@@ -39,8 +39,7 @@ class SearchAppViewModel: ObservableObject {
     
     func loadData() {
         do {
-            // Read the file content.
-            if let url = Bundle.main.url(forResource: "dictionary", withExtension: "txt") {
+            if let url = Bundle.main.url(forResource: Constants.Paths.dictionary.fileName(), withExtension:  Constants.Paths.dictionary.fileExtension()) {
                 let content = try String(contentsOf: url, encoding: .utf8)
                 let words = content.split(separator: "\n")
                 for word in words {
